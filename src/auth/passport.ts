@@ -5,9 +5,15 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import authConfig from './authConfig';
 
-const JWT_SECRET = 'MY_JWT_SECRET_KEY';
+import dotenv from 'dotenv';
+dotenv.config();
 
-console.log('auth', authConfig)
+const JWT_SECRET = process.env.JWT_SECRET as string;
+console.log('JWT_SECRET:', process.env.JWT_SECRET);
+
+
+
+
 
 passport.use(new GoogleStrategy({
   clientID: authConfig.googleClientID,
@@ -32,35 +38,34 @@ passport.use(new GoogleStrategy({
     }
 
     // Generate JWT access token and refresh token
-    const accessToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
+    const accessToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '60s' });
     const refreshToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '30d' });
     
    
 
     // Store the hashed refresh token in the user document
-    user.refreshToken = await bcrypt.hash(refreshToken, 10);
+    user.refreshToken = refreshToken;
     await user.save();
     
-    return done(null, { userId: user._id, accessToken, refreshToken, isNewUser } );
+    return done(null, { userId: user._id, accessToken, refreshToken, isNewUser, name: user.name } );
   } catch (error) {
     return done(error);
   }
 
 }));
 
-passport.serializeUser((user: any, done) => {
-  console.log('User object:', user);
-  done(null, user.userId);
-});
+// passport.serializeUser((user: any, done) => {
+//   done(null, user.userId);
+// });
 
-passport.deserializeUser(async (userId, done) => {
-  try {
-    const user: IUser | null = await User.findById(userId);
-    done(null, user || undefined);
-  } catch (error) {
-    done(error, undefined);
-  }
-});
+// passport.deserializeUser(async (userId, done) => {
+//   try {
+//     const user: IUser | null = await User.findById(userId);
+//     done(null, user || undefined);
+//   } catch (error) {
+//     done(error, undefined);
+//   }
+// });
 
 export default passport;
 

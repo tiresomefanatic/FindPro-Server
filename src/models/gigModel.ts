@@ -1,20 +1,14 @@
-import mongoose, { 
-  Document, 
-  Types, 
-  ObjectId, 
-  Model } from 'mongoose';
+import mongoose, { Document, Types, ObjectId, Model } from "mongoose";
 
+// enum category = {
+//   "Video Production": [ 'Wedding Films', "Social Media Videos", "Music Videos", "Influencer Collabs",  ],
+//   "Video Editing": ["Color Collection", "Instagram Videos", "Wedding Video Editors", "Music Videos", "Youtube Videos", "Commercials"],
+//   "Sound": ["Sync Sound", "Dubbing Artist", "SFX Editing", "Mixing and Mastering", "Music Direction"]
+//   "Writers": ["Content Writers", "Script Writers"],
+//   "Photographers": ["Wedding Photography", "Product Photography", "Photoshoots", "Real Estate Photography" "Food Photography"],
+//   "Visual Graphics": ["Social Media Animations", "Logo and Subtitles", "Illustrators", "Intros and Outros", "VFX and Motion Graphics", Graphic Designers"]
 
-
-  // enum category = {
-  //   "Video Production": [ 'Wedding Films', "Social Media Videos", "Music Videos", "Influencer Collabs",  ],
-  //   "Video Editing": ["Color Collection", "Instagram Videos", "Wedding Video Editors", "Music Videos", "Youtube Videos", "Commercials"],
-  //   "Sound": ["Sync Sound", "Dubbing Artist", "SFX Editing", "Mixing and Mastering", "Music Direction"]
-  //   "Writers": ["Content Writers", "Script Writers"],
-  //   "Photographers": ["Wedding Photography", "Product Photography", "Photoshoots", "Real Estate Photography" "Food Photography"],
-  //   "Visual Graphics": ["Social Media Animations", "Logo and Subtitles", "Illustrators", "Intros and Outros", "VFX and Motion Graphics", Graphic Designers"]
-
-  // }
+// }
 
 interface PackageObject {
   per: string;
@@ -25,62 +19,62 @@ interface PackageObject {
 interface CategoryObject {
   id: Types.ObjectId;
   name: string;
-  subCategories:Array<Types.ObjectId>;
+  subCategories: Array<Types.ObjectId>;
 }
 
 interface subCategoryObject {
   id: Types.ObjectId;
   name: string;
-  category:Types.ObjectId;
+  category: Types.ObjectId;
 }
-
 
 export interface IGigDocument extends Document {
   owner: Types.ObjectId;
   title: string;
   category?: string;
   subCategory?: string;
-  tags?:  Types.Array<string>;
+  tags?: Types.Array<string>;
   description?: string;
-  note?: string;     
+  note?: string;
   packages: Array<{
-    name: 'basic' | 'premium' | 'custom';
+    name: "basic" | "premium" | "custom";
     per: string;
     price: string;
     description: string;
   }>;
   faqs?: Array<{
     question: string;
-    answer:string;
+    answer: string;
+  }>;
+  portfolioMedia?: Array<{
+    uid: string;
+    src: string;
   }>;
 
-           // a short note/fyi for the gig
- 
- // overtime?: PackageObject;
-  status: 'isDraft' | 'isLive';
+  // a short note/fyi for the gig
+
+  // overtime?: PackageObject;
+  status: "isDraft" | "isLive";
   createdAt: Date;
   orders?: Array<Types.ObjectId>;
 }
 
 const GigSchema = new mongoose.Schema<IGigDocument>({
   owner: {
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'User', 
-      required: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
   },
   title: {
     type: String,
-   
   },
   category: {
     type: String,
-   
   },
   subCategory: {
     type: String,
-   
   },
- 
+
   description: {
     type: String,
   },
@@ -91,7 +85,7 @@ const GigSchema = new mongoose.Schema<IGigDocument>({
     {
       name: {
         type: String,
-        enum: ['basic', 'premium', 'custom'],
+        enum: ["basic", "premium", "custom"],
       },
       per: {
         type: String,
@@ -108,32 +102,40 @@ const GigSchema = new mongoose.Schema<IGigDocument>({
     {
       question: String,
       answer: String,
-    }
+    },
   ],
- 
+
   // overtime: {
   //   per: String,
   //   price: String,
   //   description: String,
   // },
-  
-  status : {
+
+  status: {
     type: String,
-    default: 'isDraft'
+    default: "isDraft",
   },
   createdAt: {
     type: Date,
     default: Date.now,
   },
-  orders: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Order' 
-  }],
+  portfolioMedia: [
+    {
+      _id: false,
+      uid: String,
+      src: String,
+    },
+  ],
+  orders: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+    },
+  ],
 });
 
-GigSchema.index({ category: 'text', subCategory: 'text' });
+GigSchema.index({ category: "text", subCategory: "text" });
 
-
-const Gig: Model<IGigDocument> = mongoose.model<IGigDocument>('Gig', GigSchema);
+const Gig: Model<IGigDocument> = mongoose.model<IGigDocument>("Gig", GigSchema);
 
 export default Gig;

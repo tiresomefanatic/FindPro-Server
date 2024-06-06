@@ -1,27 +1,29 @@
  import express from 'express';
 import passport from '../auth/passport';
 import User from '../models/usersModel';
+import { setAuthenticated, refreshAccessToken } from '../controllers/authController';
+import { authMiddleware } from '../auth/protected';
 
 const router = express.Router();
 
-declare module 'express-session' {
-    interface Session {
-      fromPage?: string,
-      userData: {
-        id: string,
-        name: string,
-        isNewLogin: string
+// declare module 'express-session' {
+//     interface Session {
+//       fromPage?: string,
+//       userData: {
+//         id: string,
+//         name: string,
+//         isNewLogin: string
 
-      },
-      isLoginOk: string,
-    }
-  }
+//       },
+//       isLoginOk: string,
+//     }
+//   }
 
 router.get('/google-login', (req, res) => {
-  const fromPage = JSON.stringify(req.query.fromPage) as string;
+  // const fromPage = JSON.stringify(req.query.fromPage) as string;
  
-  req.session.fromPage = fromPage;
-  //console.log('req query object frompage session' +  req.session.fromPage)
+  // req.session.fromPage = fromPage;
+  // //console.log('req query object frompage session' +  req.session.fromPage)
   res.redirect('/auth/google');
 });
 
@@ -35,18 +37,41 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 
 
 
-router.get('/google/callback', passport.authenticate('google', { failureRedirect: 'http://localhost:3000' }),
+router.get('/google/callback', passport.authenticate('google', { failureRedirect: 'http://localhost:3000', session: false }),
   (req, res) => {
     try {
-        const { accessToken, refreshToken, isNewUser } = req.user;
+        const { accessToken, refreshToken, isNewUser, userId, name } = req.user;
   
-        // Set the tokens as HTTP-only cookies
-        res.cookie('accessToken', accessToken, { sameSite: 'none', secure: true});
-        res.cookie('refreshToken', refreshToken, { sameSite: 'none', secure: true});
+        // // Set the tokens as HTTP-only cookies
+        // res.cookie('accessToken', accessToken);
+        // res.cookie('refreshToken', refreshToken);
+
+       // console.log('req.user', req.user)
+
+          // // Set the tokens as HTTP-only cookies
+          // res.cookie('accessToken', accessToken,  {
+          //   httpOnly: false, // Allow JavaScript access to the cookie
+          //   secure: false, // Set to true if using HTTPS
+          //   //sameSite: 'none', // Allow cross-site cookie sharing
+          //   path: '/'
+          // });
+          // res.cookie('refreshToken', refreshToken,  {
+          //   httpOnly: false, // Allow JavaScript access to the cookie
+          //   secure: false, // Set to true if using HTTPS
+          //  // sameSite: 'none', // Allow cross-site cookie sharing
+          //  path: '/'
+          // });
+
+          res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'strict',
+            path: '/',
+          });
   
         if (isNewUser) {
           // Redirect to the registration page for new users
-          res.redirect('http://localhost:3000/register');
+          res.redirect(`http://localhost:3000/register?userId=${userId}&userName=${name}`);
         } else {
           // Redirect to the login success page for existing users
           res.redirect('http://localhost:3000/loginSuccess');
@@ -57,6 +82,17 @@ router.get('/google/callback', passport.authenticate('google', { failureRedirect
       }
     }
 );
+
+
+
+router.get('/setAuthenticated', authMiddleware, setAuthenticated);
+
+router.post('/refresh-token', refreshAccessToken);
+
+router.get('/logout', authMiddleware, setAuthenticated);
+
+
+
 
 
 

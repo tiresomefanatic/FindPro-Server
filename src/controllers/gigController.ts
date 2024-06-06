@@ -8,17 +8,19 @@ import {
   getGigsByOwnerService,
   getGigsByCategoryService,
   bookmarkGigService,
-  getBookmarkedGigsService
+  getBookmarkedGigsService,
+  makeGigLiveService,
+  makeGigDraftService
 } from '../services/gigService';
 
 
 
 
-export const createGig = async (req: Request, res: Response): Promise<void> => {
+export const createGig = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     //const ownerId = req.params.id
 
-    const ownerId = '65efa449e361348ac66842d0'
+    const ownerId = new Types.ObjectId (req.userId);
 
  
     const savedGig = await createGigService(ownerId);
@@ -36,6 +38,10 @@ export const updateGig = async (req: Request, res: Response): Promise<void> => {
     const gigId = req.params.id;
     const updateData = req.body;
 
+
+
+    console.log('UPDATE DATA GIG', updateData)
+
     if (updateData.faqs) {
       const hasEmptyFields = updateData.faqs.some(
         (faq: { question: string; answer: string }) =>
@@ -50,6 +56,7 @@ export const updateGig = async (req: Request, res: Response): Promise<void> => {
 
     const updatedGig = await updateGigService(gigId, updateData);
 
+     
     // if (!updatedGig) {
     //   res.status(404).json({ error: 'Gig not found' });
     //   return;
@@ -65,7 +72,7 @@ export const updateGig = async (req: Request, res: Response): Promise<void> => {
 export const deleteGig = async (req: Request, res: Response): Promise<void> => {
   try {
     const gigId = req.params.id;
-    const deletedGig = await deleteGigService(gigId);
+    const deletedGig = await deleteGigService(gigId); 
 
     if (!deletedGig) {
       res.status(404).json({ error: 'Gig not found' });
@@ -82,7 +89,7 @@ export const deleteGig = async (req: Request, res: Response): Promise<void> => {
 export const getGigById = async (req: Request, res: Response): Promise<void> => {
   try {
     const gigId = req.params.id;
-    const gig = await Gig.findOne({ _id: gigId });
+    const gig = await getGigByIdService(gigId)
 
     if (!gig) {
       res.status(404).json({ error: 'Gig not found' });
@@ -147,17 +154,17 @@ export const getGigsByCategory = async (req: Request, res: Response) => {
   }
 };
 
-export const bookmarkGig = async (req: Request, res: Response): Promise<void> => {
+export const bookmarkGig = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const gigId = new Types.ObjectId (req.params.gigId);
-    const userId = new Types.ObjectId('65efa449e361348ac66842d0')// Replace with the actual user ID
+    const userId = new Types.ObjectId (req.userId);
 
     const result = await bookmarkGigService(userId, gigId);
 
     if (result.bookmarked) {
-      res.status(200).json({ message: 'Gig bookmarked successfully' });
+      res.status(200).json({ message: 'Gig Added', id: gigId });
     } else {
-      res.status(200).json({ message: 'Gig removed from bookmarks' });
+      res.status(200).json({ message: 'Gig Removed', id: gigId });
     }
   } catch (error) {
     console.error('Error bookmarking gig:', error);
@@ -166,16 +173,49 @@ export const bookmarkGig = async (req: Request, res: Response): Promise<void> =>
 };
 
 
-export const getBookmarkedGigs = async (req: Request, res: Response): Promise<void> => {
+export const getBookmarkedGigs = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const userId = new Types.ObjectId('65efa449e361348ac66842d0');
-
+    const userId = new Types.ObjectId (req.userId);
     const bookmarkedGigs = await getBookmarkedGigsService(userId);
 
     res.status(200).json({ bookmarkedGigs });
   } catch (error) {
     console.error('Error getting bookmarked gigs:', error);
     res.status(500).json({ error: 'An error occurred while getting bookmarked gigs' });
+  }
+};
+
+export const makeGigLive = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const gigId = req.params.id;
+    const updatedGig = await makeGigLiveService(gigId);
+
+    if (!updatedGig) {
+      res.status(404).json({ error: 'Gig not found' });
+      return;
+    }
+
+    res.status(200).json(updatedGig);
+  } catch (error) {
+    console.error('Error making gig live:', error);
+    res.status(500).json({ error: 'An error occurred while making the gig live' });
+  }
+};
+
+export const makeGigDraft = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const gigId = req.params.id;
+    const updatedGig = await makeGigDraftService(gigId);
+
+    if (!updatedGig) {
+      res.status(404).json({ error: 'Gig not found' });
+      return;
+    }
+
+    res.status(200).json(updatedGig);
+  } catch (error) {
+    console.error('Error making gig draft:', error);
+    res.status(500).json({ error: 'An error occurred while making the gig draft' });
   }
 };
 
@@ -224,7 +264,8 @@ export const getBookmarkedGigs = async (req: Request, res: Response): Promise<vo
 
 // Mock data generator
 import Gig, { IGigDocument } from '../models/gigModel';
-import mongoose, { Types } from 'mongoose';
+import mongoose, { ObjectId, Types } from 'mongoose';
+import { AuthenticatedRequest } from '../auth/protected';
 
 export const createMockGigs = async (req: Request, res: Response): Promise<void> => {
   try {
